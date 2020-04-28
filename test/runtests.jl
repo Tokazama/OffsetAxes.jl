@@ -192,7 +192,6 @@ end
     @test y[-1,-7,-128,-5,-1,-3,-2,-1] == 19
 end
 
-#=
 @testset "Vector indexing" begin
     A0 = [1 3; 2 4]
     A = OffsetArray(A0, (-1,2))
@@ -213,17 +212,21 @@ end
     @test A[:, :] == S[:, :] == A
 end
 
+# TODO it seems odd to me that indexing with an offset array would change the axes
+# of the resulting returned array
+#=
 @testset "Vector indexing with offset ranges" begin
     r = OffsetArray(8:10, -1:1)
     r1 = r[0:1]
-    @test r1 === 9:10
+    @test r1 == 9:10  # FIXME for some reason this doesn't work with `===` like OffsetArrays.jl
     r1 = (8:10)[OffsetArray(1:2, -5:-4)]
-    @test axes(r1) == (IdentityUnitRange(-5:-4),)
+    @test axes(r1) == (OffsetAxis(-5:-4),)
     @test parent(r1) === 8:9
     r1 = OffsetArray(8:10, -1:1)[OffsetArray(0:1, -5:-4)]
     @test axes(r1) == (IdentityUnitRange(-5:-4),)
     @test parent(r1) === 9:10
 end
+=#
 
 @testset "CartesianIndexing" begin
     A0 = [1 3; 2 4]
@@ -241,9 +244,10 @@ end
     @test_throws BoundsError S[CartesianIndex(1,1),0]
     @test_throws BoundsError S[CartesianIndex(1,1),2]
     @test eachindex(A) == 1:4
-    @test eachindex(S) == CartesianIndices(IdentityUnitRange.((0:1,3:4)))
+    @test eachindex(S) == CartesianIndices(OffsetAxis.((0:1,3:4)))
 end
 
+#=
 @testset "view" begin
     A0 = [1 3; 2 4]
     A = OffsetArray(A0, (-1,2))
@@ -311,6 +315,7 @@ end
     @test S[1, 1, 2] == A[1, 3, 2]
     @test axes(S) == (OffsetArrays.IdOffsetRange(0:1), Base.OneTo(2), OffsetArrays.IdOffsetRange(2:5))
 end
+=#
 
 @testset "iteration" begin
     A0 = [1 3; 2 4]
@@ -323,6 +328,7 @@ end
     end
 end
 
+#=
 @testset "show/summary" begin
     A0 = [1 3; 2 4]
     A = OffsetArray(A0, (-1,2))
@@ -360,7 +366,9 @@ end
     show(io, OffsetArray(3:5, 0:2))
     @test String(take!(io)) == "3:5 with indices 0:2"
 end
+=#
 
+#=
 @testset "readdlm/writedlm" begin
     A0 = [1 3; 2 4]
     A = OffsetArray(A0, (-1,2))
@@ -370,7 +378,10 @@ end
     seek(io, 0)
     @test readdlm(io, eltype(A)) == parent(A)
 end
+=#
 
+# TODO I have a different approach to this. The offset is preserved
+#=
 @testset "similar" begin
     A0 = [1 3; 2 4]
     A = OffsetArray(A0, (-1,2))
@@ -393,7 +404,9 @@ end
     @test similar(Array{Int}, (1, 1)) isa Matrix{Int}
     @test similar(Array{Int}, (Base.OneTo(1), Base.OneTo(1))) isa Matrix{Int}
 end
+=#
 
+#=
 @testset "reshape" begin
     A0 = [1 3; 2 4]
     A = OffsetArray(A0, (-1,2))
@@ -425,7 +438,9 @@ end
     @test reshape(OffsetArray(-1:0, -1:0), :, 1) == reshape(-1:0, 2, 1)
     @test reshape(OffsetArray(-1:2, -1:2), -2:-1, :) == reshape(-1:2, -2:-1, 2)
 end
+=#
 
+#=
 @testset "Indexing with OffsetArray axes" begin
     A0 = [1 3; 2 4]
 
@@ -601,7 +616,7 @@ end
 @testset "rot/reverse" begin
     A = OffsetArray(rand(4,4), (-3,5))
 
-    @test rotl90(A) == OffsetArray(rotl90(parent(A)), A.offsets[[2,1]])
+    @test rotl90(A) == OffsetArray(rotl90(parent(A)), reverse(map(OffsetAxes.offset, axes(A))))
     @test rotr90(A) == OffsetArray(rotr90(parent(A)), A.offsets[[2,1]])
     @test reverse(A, dims = 1) == OffsetArray(reverse(parent(A), dims = 1), A.offsets)
     @test reverse(A, dims = 2) == OffsetArray(reverse(parent(A), dims = 2), A.offsets)
@@ -693,6 +708,7 @@ end
     @test axes(OB, 1) == 1:4
     @test collect(OB) == 0:3
 end
+=#
 
 @testset "no nesting" begin
     A = randn(2, 3)
@@ -705,6 +721,7 @@ end
     @test A[2, 2] == x + 1
 end
 
+#=
 @testset "mutating functions for OffsetVector" begin
     # push!
     o = OffsetVector(Int[], -1)
@@ -726,6 +743,8 @@ end
     @test axes(o, 1) == 0:-1
 end
 
+=#
+
 @testset "searchsorted (#85)" begin
     o = OffsetVector([1,3,4,5],-2)
     @test searchsortedfirst(o,-2) == -1
@@ -744,4 +763,3 @@ end
     @test searchsorted(o,  5) ==  2:2
     @test searchsorted(o,  6) ==  3:2
 end
-=#
