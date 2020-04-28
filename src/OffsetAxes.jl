@@ -28,5 +28,6 @@ include("offsetaxis.jl")
 include("offsetarray.jl")
 include("centeredaxis.jl")
 include("centeredarray.jl")
+include("identityaxis.jl")
 
 end

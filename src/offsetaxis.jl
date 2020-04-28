@@ -91,3 +91,13 @@ function StaticRanges.similar_type(
     return OffsetAxis{eltype(vs_type),vs_type}
 end
 
+struct OffsetStyle{S} <: AbstractOffsetStyle{S} end
+
+OffsetStyle(S::AxisIndicesStyle) = OffsetStyle{S}()
+OffsetStyle(S::IndicesCollection) =  OffsetStyle{KeysCollection()}()
+OffsetStyle(S::IndexElement) = OffsetStyle{KeyElement()}()
+
+function AxisIndices.AxisIndicesStyle(::Type{<:OffsetAxis}, ::Type{T}) where {T}
+    return OffsetStyle(AxisIndices.AxisIndicesStyle(T))
+end
+

@@ -50,14 +50,6 @@ function Base.checkindex(::Type{Bool}, axis::AbstractOffsetAxis, i::AbstractUnit
     return checkindex(Bool, values(axis), values(axis) .- offset(axis))
 end
 
-@inline function AxisIndices.AxisIndicesStyle(::Type{<:AbstractOffsetAxis}, ::Type{T}) where {T}
-    return force_keys(AxisIndices.AxisIndicesStyle(T))
-end
-
-force_keys(S::AxisIndicesStyle) = S
-force_keys(S::IndicesCollection) = KeysCollection()
-force_keys(S::IndexElement) = KeyElement()
-
 @inline function Base.compute_offset1(parent, stride1::Integer, dims::Tuple{Int}, inds::Tuple{<:AbstractOffsetAxis}, I::Tuple)
     return Base.compute_linindex(parent, I) - stride1*first(axes(parent, dims[1]))
 end
@@ -70,3 +62,12 @@ end
 # although this isn't a subtype of AbstractSimpleAxis it is essentially the same thing
 # because the keys aren't just mapped to the indices, they are the indices + an offset
 AxisIndices.is_simple_axis(::Type{<:AbstractOffsetAxis}) = true
+
+abstract type AbstractOffsetStyle{S} <: AxisIndices.AxisIndicesStyle end
+
+function AxisIndices.to_index(::AbstractOffsetStyle{S}, axis, arg) where {S}
+    return AxisIndices.to_index(S, axis, arg)
+end
+function AxisIndices.to_keys(::AbstractOffsetStyle{S}, axis, arg, index) where {S}
+    return AxisIndices.to_keys(S, axis, arg, index)
+end
