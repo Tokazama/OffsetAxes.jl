@@ -2,7 +2,13 @@
 """
     AbstractOffsetAxis{V,Vs}
 """
-abstract type AbstractOffsetAxis{V,Vs} <: AbstractAxis{V,V,UnitRange{V},Vs} end
+abstract type AbstractOffsetAxis{V,Vs} <: AbstractSimpleAxis{V,Vs} end
+
+function Base.show(io::IO, ::MIME"text/plain", axis::A) where {A<:AbstractOffsetAxis}
+    return print(io, "$(A.name)($(keys(axis)))")
+end
+
+StaticRanges.axes_type(::Type{<:AbstractOffsetAxis{V,Vs}}) where {V,Vs} = UnitRange{V}
 
 Base.firstindex(axis::AbstractOffsetAxis) = first(axis)
 
@@ -12,7 +18,21 @@ Base.lastindex(axis::AbstractOffsetAxis) = last(axis)
 
 @inline Base.last(axis::AbstractOffsetAxis) = last(values(axis)) + offset(axis)
 
-Base.keys(axis::AbstractOffsetAxis) = firstindex(axis):lastindex(axis)
+function Base.keys(axis::AbstractOffsetAxis{V,Vs}) where {V,Vs}
+    return UnitRange(firstindex(axis), lastindex(axis))
+end
+
+function AxisIndices.unsafe_reconstruct(axis::AbstractOffsetAxis, ks, inds)
+    return similar_type(axis, inds)(ks, inds)
+end
+
+function AxisIndices.unsafe_reconstruct(axis::AbstractOffsetAxis, inds)
+    return similar_type(axis, inds)(inds)
+end
+
+function AxisIndices.assign_indices(axis::AbstractOffsetAxis, inds)
+    return similar_type(axis, inds)(offset(axis), values(inds))
+end
 
 offset(r::AbstractUnitRange) = 1 - first(r)
 
@@ -59,15 +79,21 @@ end
 end
 @inline Base.unsafe_indices(axis::AbstractOffsetAxis) = (axis,)
 
-# although this isn't a subtype of AbstractSimpleAxis it is essentially the same thing
-# because the keys aren't just mapped to the indices, they are the indices + an offset
-AxisIndices.is_simple_axis(::Type{<:AbstractOffsetAxis}) = true
+struct OffsetStyle{S} <: AxisIndices.AxisIndicesStyle end
 
-abstract type AbstractOffsetStyle{S} <: AxisIndices.AxisIndicesStyle end
+OffsetStyle(S::AxisIndicesStyle) = OffsetStyle{S}()
+OffsetStyle(S::IndicesCollection) =  OffsetStyle{KeysCollection()}()
+OffsetStyle(S::IndexElement) = OffsetStyle{KeyElement()}()
 
-function AxisIndices.to_index(::AbstractOffsetStyle{S}, axis, arg) where {S}
+function AxisIndices.AxisIndicesStyle(::Type{<:AbstractOffsetAxis}, ::Type{T}) where {T}
+    return OffsetStyle(AxisIndices.AxisIndicesStyle(T))
+end
+
+function AxisIndices.to_index(::OffsetStyle{S}, axis, arg) where {S}
     return AxisIndices.to_index(S, axis, arg)
 end
-function AxisIndices.to_keys(::AbstractOffsetStyle{S}, axis, arg, index) where {S}
+
+function AxisIndices.to_keys(::OffsetStyle{S}, axis, arg, index) where {S}
     return AxisIndices.to_keys(S, axis, arg, index)
 end
+

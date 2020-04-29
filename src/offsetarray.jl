@@ -41,7 +41,7 @@ function OffsetArray{T,N}(A::AbstractArray, inds::Tuple) where {T,N}
         index = getfield(inds, i)
         axis = axes(A, i)
         if index isa Integer
-            OffsetAxis(index, axis)
+            OffsetAxis(index + offset(axis), values(axis))
         else
             if length(index) == length(axis)
                 OffsetAxis(first(index) - first(axis), axis)
@@ -58,10 +58,10 @@ function OffsetArray{T,N}(A::AbstractAxisIndices, inds::Tuple) where {T,N}
         index = getfield(inds, i)
         axis = axes(A, i)
         if index isa Integer
-            OffsetAxis(index + offset(axis), values(axis))
+            OffsetAxis(index, values(axis))
         else
             if length(index) == length(axis)
-                OffsetAxis(first(index) - first(axis), axis)
+                OffsetAxis(index, values(axis))
             else
                 throw(DimensionMismatch("supplied axes do not agree with the size of the array (got size $(length(axis)) for the array and $(length(index)) for the indices"))
             end
@@ -69,3 +69,4 @@ function OffsetArray{T,N}(A::AbstractAxisIndices, inds::Tuple) where {T,N}
     end
     return AxisIndicesArray{T,N}(parent(A), axs)
 end
+

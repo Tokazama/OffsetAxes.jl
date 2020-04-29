@@ -1,7 +1,5 @@
-
 #=
     OffsetAxis
-
 The keys act as the indices for an OffsetAxis. So the `values(::OffsetAxis)` have
 the indices `keys(::OffsetAxis)`
 =#
@@ -18,34 +16,10 @@ Base.values(axis::OffsetAxis) = getfield(axis, :values)
 
 offset(r::OffsetAxis) = getfield(r, :offset)
 
+# args: range
 OffsetAxis(vs::AbstractUnitRange) = OffsetAxis(0, vs)
 OffsetAxis{V}(vs::AbstractUnitRange) where {V} = OffsetAxis{V}(zero(V), vs)
 OffsetAxis{V,Vs}(vs::AbstractUnitRange) where {V,Vs} = OffsetAxis{V,Vs}(zero(V), vs)
-
-function OffsetAxis{V,Vs}(offset::Integer, r::AbstractUnitRange) where {V<:Integer,Vs<:AbstractUnitRange{V}}
-    o, rc = offset_coerce(Vs, r)
-    return OffsetAxis{V,Vs}(convert(V, o + offset), rc)
-end
-
-function OffsetAxis{V,Vs}(ks::AbstractUnitRange, vs::AbstractUnitRange) where {V<:Integer,Vs<:AbstractUnitRange{V}}
-    return OffsetAxis{V,Vs}(compute_offset(vs, ks), vs)
-end
-
-function OffsetAxis{V}(offset::Integer, r::AbstractUnitRange) where V<:Integer
-    rc = convert(AbstractUnitRange{V}, r)::AbstractUnitRange{V}
-    return OffsetAxis{V,typeof(rc)}(convert(V, offset), rc)
-end
-
-function OffsetAxis(offset::Integer, r::AbstractUnitRange{V}) where V<:Integer
-    return OffsetAxis{V,typeof(r)}(convert(V, offset), r)
-end
-
-# Coercion from other OffsetAxiss
-OffsetAxis{V,Vs}(r::OffsetAxis{V,Vs}) where {V<:Integer,Vs<:AbstractUnitRange{V}} = r
-function OffsetAxis{V,Vs}(r::OffsetAxis) where {V<:Integer,Vs<:AbstractUnitRange{V}}
-    return OffsetAxis{V,Vs}(keys(r))
-end
-
 function OffsetAxis{V}(r::OffsetAxis) where V<:Integer
     return OffsetAxis(offset(r), convert(AbstractUnitRange{V}, values(r)))
 end
@@ -53,6 +27,36 @@ OffsetAxis(r::OffsetAxis) = r
 
 function offset_coerce(::Type{Base.OneTo{V}}, r::Base.OneTo) where V<:Integer
     return 0, convert(Base.OneTo{V}, r)
+end
+
+# args: 2xrange
+OffsetAxis(ks::AbstractUnitRange, vs::AbstractUnitRange{V}) where {V} = OffsetAxis{V}(ks, vs)
+function OffsetAxis{V}(ks::AbstractUnitRange, vs::AbstractUnitRange{V}) where {V}
+    return OffsetAxis{V,typeof(vs)}(ks, vs)
+end
+function OffsetAxis{V}(ks::AbstractUnitRange, vs::AbstractUnitRange) where {V}
+    return OffsetAxis{V}(ks, convert(AbstractUnitRange{V}, vs))
+end
+function OffsetAxis{V,Vs}(ks::AbstractUnitRange, vs::AbstractUnitRange) where {V<:Integer,Vs<:AbstractUnitRange{V}}
+    return OffsetAxis{V,Vs}(compute_offset(vs, ks), vs)
+end
+
+# args: offset, range
+function OffsetAxis{V,Vs}(offset::Integer, r::AbstractUnitRange) where {V<:Integer,Vs<:AbstractUnitRange{V}}
+    o, rc = offset_coerce(Vs, r)
+    return OffsetAxis{V,Vs}(convert(V, o + offset), rc)
+end
+function OffsetAxis{V}(offset::Integer, r::AbstractUnitRange) where V<:Integer
+    rc = convert(AbstractUnitRange{V}, r)::AbstractUnitRange{V}
+    return OffsetAxis{V,typeof(rc)}(convert(V, offset), rc)
+end
+function OffsetAxis(offset::Integer, r::AbstractUnitRange{V}) where V<:Integer
+    return OffsetAxis{V,typeof(r)}(convert(V, offset), r)
+end
+# Coercion from other OffsetAxiss
+OffsetAxis{V,Vs}(r::OffsetAxis{V,Vs}) where {V<:Integer,Vs<:AbstractUnitRange{V}} = r
+function OffsetAxis{V,Vs}(r::OffsetAxis) where {V<:Integer,Vs<:AbstractUnitRange{V}}
+    return OffsetAxis{V,Vs}(keys(r))
 end
 
 function offset_coerce(::Type{Base.OneTo{V}}, r::AbstractUnitRange) where V<:Integer
@@ -76,8 +80,8 @@ end
 # Base.convert(::Type{OffsetAxis{V,Vs}}, r::AbstractUnitRange) where {V<:Integer,Vs<:AbstractUnitRange{V}} =
 #     OffsetAxis{V,Vs}(convert(Vs, r), 0)
 
-function AxisIndices.unsafe_reconstruct(axis::OffsetAxis, ks::Ks, vs::Vs) where {Ks,Vs}
-    return similar_type(axis, Vs)(ks, vs)
+function AxisIndices.unsafe_reconstruct(axis::OffsetAxis, vs::Vs) where {Ks,Vs}
+    return similar_type(axis, Vs)(offset(axis), vs)
 end
 
 function AxisIndices.assign_indices(axis::OffsetAxis, inds)
@@ -91,13 +95,15 @@ function StaticRanges.similar_type(
     return OffsetAxis{eltype(vs_type),vs_type}
 end
 
-struct OffsetStyle{S} <: AbstractOffsetStyle{S} end
 
-OffsetStyle(S::AxisIndicesStyle) = OffsetStyle{S}()
-OffsetStyle(S::IndicesCollection) =  OffsetStyle{KeysCollection()}()
-OffsetStyle(S::IndexElement) = OffsetStyle{KeyElement()}()
+function Base.promote_rule(
+    ::Type{OffsetAxis{V1,Vs1}},
+    ::Type{OffsetAxis{V2,Vs2}}
+) where {V1,Vs1,V2,Vs2}
 
-function AxisIndices.AxisIndicesStyle(::Type{<:OffsetAxis}, ::Type{T}) where {T}
-    return OffsetStyle(AxisIndices.AxisIndicesStyle(T))
+    return Base.OffsetAxis{
+        promote_type(V1,V2),
+        promote_type(Vs1,Vs2)
+    }
 end
 
