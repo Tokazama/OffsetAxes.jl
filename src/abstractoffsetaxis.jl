@@ -22,16 +22,16 @@ function Base.keys(axis::AbstractOffsetAxis{V,Vs}) where {V,Vs}
     return UnitRange(firstindex(axis), lastindex(axis))
 end
 
-function AxisIndices.unsafe_reconstruct(axis::AbstractOffsetAxis, ks, inds)
-    return similar_type(axis, inds)(ks, inds)
+function AxisIndices.unsafe_reconstruct(axis::AbstractOffsetAxis, ks, inds::I) where {I}
+    return similar_type(axis, I)(ks, inds)
 end
 
-function AxisIndices.unsafe_reconstruct(axis::AbstractOffsetAxis, inds)
-    return similar_type(axis, inds)(inds)
+function AxisIndices.unsafe_reconstruct(axis::AbstractOffsetAxis, inds::I) where {I}
+    return similar_type(axis, I)(inds)
 end
 
-function AxisIndices.assign_indices(axis::AbstractOffsetAxis, inds)
-    return similar_type(axis, inds)(offset(axis), values(inds))
+function AxisIndices.assign_indices(axis::AbstractOffsetAxis, inds::I) where {I}
+    return similar_type(axis, I)(offset(axis), values(inds))
 end
 
 offset(r::AbstractUnitRange) = 1 - first(r)
@@ -66,9 +66,9 @@ function Base.checkindex(::Type{Bool}, axis::AbstractOffsetAxis, i::Integer)
     return checkindex(Bool, values(axis), values(axis) - offset(axis))
 end
 
-function Base.checkindex(::Type{Bool}, axis::AbstractOffsetAxis, i::AbstractUnitRange{<:Integer})
-    return checkindex(Bool, values(axis), values(axis) .- offset(axis))
-end
+#function Base.checkindex(::Type{Bool}, axis::AbstractOffsetAxis, i::AbstractUnitRange{<:Integer})
+#    return checkindex(Bool, values(axis), values(axis) .- offset(axis))
+#end
 
 @inline function Base.compute_offset1(parent, stride1::Integer, dims::Tuple{Int}, inds::Tuple{<:AbstractOffsetAxis}, I::Tuple)
     return Base.compute_linindex(parent, I) - stride1*first(axes(parent, dims[1]))

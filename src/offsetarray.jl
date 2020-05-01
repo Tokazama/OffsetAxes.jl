@@ -18,14 +18,16 @@ OffsetArray(A::AbstractArray{T,N}, inds::Vararg) where {T,N} = OffsetArray(A, in
 
 OffsetArray(A::AbstractArray{T,N}, inds::Tuple) where {T,N} = OffsetArray{T,N}(A, inds)
 
-function OffsetArray(A::AbstractArray{T,0}, ::Tuple{}) where {T}
-    return AxisIndicesArray(A)
-end
-OffsetArray(A) = OffsetArray(A, offsets(A))
+OffsetArray(A::AbstractArray{T,0}, ::Tuple{}) where {T} = AxisIndicesArray(A)
+OffsetArray(A::AbstractArray) = OffsetArray(A, offsets(A))
 
 # OffsetVector constructors
-OffsetVector(A, arg) = OffsetArray(A, arg)
-OffsetVector{T}(A, arg) where {T} = OffsetArray{T}(A, arg)
+OffsetVector(A::AbstractVector, arg) = OffsetArray{eltype(A)}(A, arg)
+
+# TODO What if `arg` is an integer?
+function OffsetVector{T}(init::Union{UndefInitializer, Missing, Nothing}, arg) where {T}
+    return OffsetVector(Vector{T}(init, length(arg)), arg)
+end
 
 OffsetArray{T}(A, inds::Tuple) where {T} = OffsetArray{T,length(inds)}(A, inds)
 OffsetArray{T}(A, inds::Vararg) where {T} = OffsetArray{T,length(inds)}(A, inds)
@@ -37,36 +39,11 @@ end
 OffsetArray{T,N}(A, inds::Vararg) where {T,N} = OffsetArray{T,N}(A, inds)
 
 function OffsetArray{T,N}(A::AbstractArray, inds::Tuple) where {T,N}
-    axs = ntuple(Val(N)) do i
-        index = getfield(inds, i)
-        axis = axes(A, i)
-        if index isa Integer
-            OffsetAxis(index + offset(axis), values(axis))
-        else
-            if length(index) == length(axis)
-                OffsetAxis(first(index) - first(axis), axis)
-            else
-                throw(DimensionMismatch("supplied axes do not agree with the size of the array (got size $(length(axis)) for the array and $(length(index)) for the indices"))
-            end
-        end
-    end
-    return AxisIndicesArray{T,N}(A, axs)
+    return AxisIndicesArray{T,N}(A, to_offset_axes(A, inds))
 end
 
 function OffsetArray{T,N}(A::AbstractAxisIndices, inds::Tuple) where {T,N}
-    axs = ntuple(Val(N)) do i
-        index = getfield(inds, i)
-        axis = axes(A, i)
-        if index isa Integer
-            OffsetAxis(index, values(axis))
-        else
-            if length(index) == length(axis)
-                OffsetAxis(index, values(axis))
-            else
-                throw(DimensionMismatch("supplied axes do not agree with the size of the array (got size $(length(axis)) for the array and $(length(index)) for the indices"))
-            end
-        end
-    end
-    return AxisIndicesArray{T,N}(parent(A), axs)
+    return AxisIndicesArray{T,N}(parent(A), to_offset_axes(A, inds))
 end
+
 

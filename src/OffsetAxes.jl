@@ -3,7 +3,9 @@ module OffsetAxes
 using Reexport
 using AxisIndices
 using StaticRanges
+using StaticRanges: similar_type
 using AxisIndices: AxisIndicesStyle, IndicesCollection, IndexElement, KeyElement, KeysCollection
+using AxisIndices: unsafe_reconstruct
 using Base: OneTo, @propagate_inbounds, tail
 
 @reexport using AxisIndices
