@@ -14,7 +14,8 @@ using Base: OneTo, @propagate_inbounds, tail
 export
     OffsetAxis,
     OffsetArray,
-    OffsetVector
+    OffsetVector,
+    CenteredAxis
 
 @static if !isdefined(Base, :IdentityUnitRange)
     const IdentityUnitRange = Base.Slice
@@ -25,7 +26,7 @@ end
 include("abstractoffsetaxis.jl")
 include("offsetaxis.jl")
 include("offsetarray.jl")
-# include("centeredaxis.jl")
+ include("centeredaxis.jl")
 # include("identityaxis.jl")
 
 end
