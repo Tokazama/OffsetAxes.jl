@@ -79,6 +79,11 @@ end
 end
 @inline Base.unsafe_indices(axis::AbstractOffsetAxis) = (axis,)
 
+#=
+    OffsetStyle{S}
+
+
+=#
 struct OffsetStyle{S} <: AxisIndices.AxisIndicesStyle end
 
 OffsetStyle(S::AxisIndicesStyle) = OffsetStyle{S}()
@@ -88,6 +93,8 @@ OffsetStyle(S::IndexElement) = OffsetStyle{KeyElement()}()
 function AxisIndices.AxisIndicesStyle(::Type{<:AbstractOffsetAxis}, ::Type{T}) where {T}
     return OffsetStyle(AxisIndices.AxisIndicesStyle(T))
 end
+
+AxisIndices.is_element(::Type{OffsetStyle{T}}) where {T} = AxisIndices.is_element(T)
 
 function AxisIndices.to_index(::OffsetStyle{S}, axis, arg) where {S}
     return AxisIndices.to_index(S, axis, arg)
